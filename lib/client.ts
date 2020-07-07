@@ -75,7 +75,7 @@ export class Client {
 
   async isAuthenticated(): Promise<boolean> {
     try {
-      await this.getAccount()
+      await this.info();
       return true
     }
     catch (e) {
@@ -83,90 +83,54 @@ export class Client {
     }
   }
 
-  getAccount(): Promise<Account> {
+  info(): Promise<Account> {
     return this.request(method.GET, BaseURL.Account, 'account')
   }
 
-  getOrder(parameters: GetOrderParameters): Promise<Order> {
-    return this.request(
-      method.GET,
-      BaseURL.Account,
-      `orders/${
-        parameters.order_id || parameters.client_order_id
-      }?${qs.stringify({
-        nested: parameters.nested,
-      })}`
-    )
-  }
+  public orders = {
+    get(parameters?: GetOrdersParameters): Promise<Order[]> {
 
-  getOrders(parameters?: GetOrdersParameters): Promise<Order[]> {
-    return this.request(
-      method.GET,
-      BaseURL.Account,
-      `orders?${qs.stringify(parameters)}`
-    )
+      // If the client wants a specific order...
+      if(parameters.client_order_id || parameters.order_id)
+        return this.request(method.GET, BaseURL.Account, `orders/${parameters.order_id || parameters.client_order_id}?${qs.stringify({ nested: parameters.nested })}`)
+      
+      // Else just make the request to the main 
+      return this.request(method.GET, BaseURL.Account, `orders?${qs.stringify(parameters)}`)
+    }
   }
 
   placeOrder(parameters: PlaceOrderParameters): Promise<Order> {
-    let transaction = this.request(
+    return this.request(
       method.POST,
       BaseURL.Account,
       `orders`,
       parameters
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    )
   }
 
   replaceOrder(parameters: ReplaceOrderParameters): Promise<Order> {
-    let transaction = this.request(
+    return this.request(
       method.PATCH,
       BaseURL.Account,
       `orders/${parameters.order_id}`,
       parameters
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    )
   }
 
   cancelOrder(parameters: CancelOrderParameters): Promise<Order> {
-    let transaction = this.request(
+    return this.request(
       method.DELETE,
       BaseURL.Account,
       `orders/${parameters.order_id}`
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    )
   }
 
   cancelOrders(): Promise<Order[]> {
-    let transaction = this.request(
+    return this.request(
       method.DELETE,
       BaseURL.Account,
       `orders`
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    )
   }
 
   getPosition(parameters: GetPositionParameters): Promise<Position> {
@@ -182,33 +146,19 @@ export class Client {
   }
 
   closePosition(parameters: ClosePositionParameters): Promise<Order> {
-    let transaction = this.request(
+    return this.request(
       method.DELETE,
       BaseURL.Account,
       `positions/${parameters.symbol}`
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    );
   }
 
   closePositions(): Promise<Order[]> {
-    let transaction = this.request(
+    return this.request(
       method.DELETE,
       BaseURL.Account,
       `positions`
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    );
   }
 
   getAsset(parameters: GetAssetParameters): Promise<Asset> {
@@ -240,81 +190,48 @@ export class Client {
   }
 
   createWatchlist(parameters: CreateWatchListParameters): Promise<Watchlist[]> {
-    let transaction = this.request(
+    return this.request(
       method.POST,
       BaseURL.Account,
       `watchlists`,
       parameters
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    );
   }
 
   updateWatchlist(parameters: UpdateWatchListParameters): Promise<Watchlist> {
-    let transaction = this.request(
+    return this.request(
       method.PUT,
       BaseURL.Account,
       `watchlists/${parameters.uuid}`,
       parameters
-    ).finally(() => {
-      this.pendingPromises.splice(this.pendingPromises.indexOf(transaction), 1);
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    );
   }
 
   addToWatchlist(parameters: AddToWatchListParameters): Promise<Watchlist> {
-    let transaction = this.request(
+    return this.request(
       method.POST,
       BaseURL.Account,
       `watchlists/${parameters.uuid}`,
       parameters
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    );
   }
 
   removeFromWatchlist(
     parameters: RemoveFromWatchListParameters
   ): Promise<void> {
-    let transaction = this.request(
+    return this.request(
       method.DELETE,
       BaseURL.Account,
       `watchlists/${parameters.uuid}/${parameters.symbol}`
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    );
   }
 
   deleteWatchlist(parameters: DeleteWatchListParameters): Promise<void> {
-    let transaction = this.request(
+    return this.request(
       method.DELETE,
       BaseURL.Account,
       `watchlists/${parameters.uuid}`
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    )
   }
 
   getCalendar(parameters?: GetCalendarParameters): Promise<Calendar[]> {
@@ -336,19 +253,12 @@ export class Client {
   updateAccountConfigurations(
     parameters: UpdateAccountConfigurationsParameters
   ): Promise<AccountConfigurations> {
-    let transaction = this.request(
+    return this.request(
       method.PATCH,
       BaseURL.Account,
       `account/configurations`,
       parameters
-    ).finally(() => {
-      this.pendingPromises = this.pendingPromises.filter(
-        (p) => p !== transaction
-      )
-    })
-
-    this.pendingPromises.push(transaction)
-    return transaction
+    )
   }
 
   getAccountActivities(
@@ -380,10 +290,7 @@ export class Client {
     transformed = parameters
     transformed['symbols'] = parameters.symbols.join(',')
 
-    return this.request(
-      method.GET,
-      BaseURL.MarketData,
-      `bars/${parameters.timeframe}?${qs.stringify(parameters)}`
+    return this.request(method.GET, BaseURL.MarketData,`bars/${parameters.timeframe}?${qs.stringify(parameters)}`
     )
   }
 
@@ -403,55 +310,41 @@ export class Client {
     )
   }
 
-  // allow all promises to complete
-  async close(): Promise<void> {
-    return Promise.all(this.pendingPromises).then(() => {})
-  }
-
-  private request(
+  private async request(
     method: method,
     url: string,
     endpoint: string,
     data?: any
   ): Promise<any> {
+
     // modify the base url if paper is true
-    if (this.options.paper && url == BaseURL.Account) {
-      url = BaseURL.Account.replace('api.', 'paper-api.')
-    }
+    if (this.options.paper && url == BaseURL.Account)
+      url = BaseURL.Account.replace('api.', 'paper-api.');
 
     // convert any dates to ISO 8601 for Alpaca
-    if (data) {
-      for (let [key, value] of Object.entries(data)) {
-        if (value instanceof Date) {
+    if (data)
+      for (let [key, value] of Object.entries(data))
+        if (value instanceof Date)
           data[key] = (value as Date).toISOString()
-        }
-      }
-    }
+    
+    // do rate limiting
+    if (this.options.rate_limit)
+      await new Promise<void>(resolve => this.limiter.removeTokens(1, resolve))
 
-    return new Promise<any>(async (resolve, reject) => {
-      // do rate limiting
-      if (this.options.rate_limit) {
-        await new Promise<void>((resolve) =>
-          this.limiter.removeTokens(1, resolve)
-        )
-      }
+    // Fetches the response and converts it to JSON
+    const res = (await fetch(`${url}/${endpoint}`, {
+      method, headers: {
+        'APCA-API-KEY-ID': this.options.key,
+        'APCA-API-SECRET-KEY': this.options.secret,
+      },
+      body: JSON.stringify(data),
+    }).catch(err => { throw new Error(err) })).json();
+      
+    // Is it an alpaca error response?
+    if('code' in res && 'message' in res)
+      throw new Error("Alpaca error detected in request response: " + JSON.stringify(res));
 
-      await fetch(`${url}/${endpoint}`, {
-        method: method,
-        headers: {
-          'APCA-API-KEY-ID': this.options.key,
-          'APCA-API-SECRET-KEY': this.options.secret,
-        },
-        body: JSON.stringify(data),
-      })
-        .then((response) => response.json())
-        .then((response) =>
-          // is it an alpaca error response?
-          'code' in response && 'message' in response
-            ? reject(response)
-            : resolve(response)
-        )
-        .catch(reject)
-    })
+    // Returns the finalized response.
+    return res;
   }
 }
